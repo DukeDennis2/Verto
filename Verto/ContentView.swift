@@ -208,10 +208,11 @@ extension LinearGradient {
 struct CoinDetailView: View {
     let coin: Coin
     @StateObject private var viewModel = CoinDetailViewModel()
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
         ZStack {
-            Color(.systemGroupedBackground).ignoresSafeArea()
+            Color.white.ignoresSafeArea()
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     HStack(spacing: 16) {
@@ -228,10 +229,8 @@ struct CoinDetailView: View {
                         VStack(alignment: .leading) {
                             Text(coin.name)
                                 .font(.title2).bold()
-                                .foregroundColor(.primary)
                             Text(coin.symbol.uppercased())
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
                         }
                         Spacer()
                     }
@@ -241,15 +240,12 @@ struct CoinDetailView: View {
                         VStack {
                             Text("Current Price")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
                             Text("$\(String(format: "%.2f", coin.price))")
                                 .font(.title2).bold()
-                                .foregroundColor(.primary)
                         }
                         VStack {
                             Text("24h Change")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
                             Text("\(String(format: "%+.2f", coin.percentChange))%")
                                 .font(.title2).bold()
                                 .foregroundColor(coin.percentChange >= 0 ? .green : .red)
@@ -257,16 +253,14 @@ struct CoinDetailView: View {
                         VStack {
                             Text("Market Cap")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
                             Text(coin.market_cap != nil ? "$\(Int(coin.market_cap!))" : "-")
                                 .font(.title3)
-                                .foregroundColor(.primary)
                         }
                     }
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemBackground).opacity(0.95))
+                            .fill(Color.white.opacity(0.95))
                             .shadow(radius: 4)
                     )
                     // Interval Picker
@@ -277,7 +271,7 @@ struct CoinDetailView: View {
                     }
                     .pickerStyle(SegmentedPickerStyle())
                     .padding(.bottom)
-                    .onChange(of: viewModel.selectedInterval) { newInterval in
+                    .onChange(of: viewModel.selectedInterval) { _, newInterval in
                         viewModel.fetchHistory(for: coin.id, interval: newInterval)
                     }
                     // Chart Card
@@ -329,31 +323,29 @@ struct CoinDetailView: View {
                                 HStack {
                                     Text("$\(String(format: "%.2f", selected.price))")
                                         .font(.headline)
-                                        .foregroundColor(.primary)
                                     Spacer()
                                     Text(selected.date, style: .date)
-                                        .foregroundColor(.secondary)
                                     Text(selected.date, style: .time)
-                                        .foregroundColor(.secondary)
                                 }
                                 .padding(.vertical, 4)
                             }
                         } else {
                             Text("No chart data available.")
-                                .foregroundColor(.secondary)
                         }
                     }
                     .padding()
                     .background(
                         RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemBackground).opacity(0.95))
+                            .fill(Color.white.opacity(0.95))
                             .shadow(radius: 4)
                     )
                 }
                 .padding()
             }
         }
+#if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+#endif
         .onAppear {
             viewModel.selectedInterval = .all
             viewModel.fetchHistory(for: coin.id, interval: .all)
@@ -364,11 +356,12 @@ struct CoinDetailView: View {
 // MARK: - PricesView (infinite scroll & pull-to-refresh)
 struct PricesView: View {
     @StateObject private var viewModel = PricesViewModel()
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
         NavigationView {
             ZStack {
-                Color(.systemGroupedBackground)
+                Color.white
                     .ignoresSafeArea()
                 VStack {
                     Picker("Sort by", selection: $viewModel.sortOption) {
@@ -380,7 +373,7 @@ struct PricesView: View {
                     .padding([.top, .horizontal])
                     .background(
                         RoundedRectangle(cornerRadius: 14)
-                            .fill(Color(.systemBackground).opacity(0.95))
+                            .fill(Color.white.opacity(0.95))
                             .shadow(radius: 2)
                     )
                     .padding(.horizontal)
@@ -419,7 +412,7 @@ struct PricesView: View {
                 .foregroundColor(.primary)
             }
         }
-        .onChange(of: viewModel.sortOption) { _ in
+        .onChange(of: viewModel.sortOption) { _, _ in
             viewModel.sortCoins()
         }
     }
@@ -428,6 +421,8 @@ struct PricesView: View {
 // MARK: - CoinRowView (improved readability)
 struct CoinRowView: View {
     let coin: Coin
+    @Environment(\.colorScheme) var colorScheme
+    
     var body: some View {
         HStack(spacing: 16) {
             if let imageUrl = coin.image, let url = URL(string: imageUrl) {
@@ -443,16 +438,13 @@ struct CoinRowView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(coin.name)
                     .font(.headline)
-                    .foregroundColor(.primary)
                 Text(coin.symbol.uppercased())
                     .font(.caption)
-                    .foregroundColor(.secondary)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
                 Text("$\(String(format: "%.2f", coin.price))")
                     .font(.headline)
-                    .foregroundColor(.primary)
                 Text("\(String(format: "%+.2f", coin.percentChange))%")
                     .font(.caption)
                     .foregroundColor(coin.percentChange >= 0 ? .green : .red)
@@ -463,7 +455,7 @@ struct CoinRowView: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color(.systemBackground).opacity(0.95))
+                .fill(Color.white.opacity(0.95))
                 .shadow(color: Color.black.opacity(0.08), radius: 4, x: 0, y: 2)
         )
     }
@@ -540,7 +532,7 @@ struct CryptoMapView: View {
             }
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(.systemBackground).opacity(0.95))
+                    .fill(Color.white.opacity(0.95))
                     .shadow(radius: 4)
             )
             .padding()
@@ -549,24 +541,377 @@ struct CryptoMapView: View {
     }
 }
 
-struct PortfolioView: View {
+// MARK: - Portfolio Models
+struct PortfolioPosition: Identifiable {
+    let id = UUID()
+    let coin: String
+    let symbol: String
+    let amount: Double
+    let buyPrice: Double
+    let currentPrice: Double
+    var value: Double { amount * currentPrice }
+    var cost: Double { amount * buyPrice }
+    var profit: Double { value - cost }
+    var percent: Double { (profit / cost) * 100 }
+}
+
+// MARK: - CoinListItem for Picker
+struct CoinListItem: Identifiable, Decodable {
+    let id: String
+    let symbol: String
+    let name: String
+    let image: String?
+    let current_price: Double
+}
+
+// MARK: - CoinGeckoService (all coins for picker)
+extension CoinGeckoService {
+    func fetchAllCoinsForPicker() -> AnyPublisher<[CoinListItem], Error> {
+        let url = URL(string: "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false")!
+        return URLSession.shared.dataTaskPublisher(for: url)
+            .map { $0.data }
+            .decode(type: [CoinListItem].self, decoder: JSONDecoder())
+            .receive(on: DispatchQueue.main)
+            .eraseToAnyPublisher()
+    }
+}
+
+// MARK: - Portfolio Sub-Views
+struct PortfolioSummaryView: View {
+    let totalValue: Double
+    let totalProfit: Double
+    let totalPercent: Double
+    @Environment(\.colorScheme) var colorScheme
+    
     var body: some View {
-        ZStack {
-            Color(UIColor.systemBackground).ignoresSafeArea()
+        VStack(spacing: 8) {
+            Text("Total Portfolio Value")
+                .font(.caption)
+            Text("$\(String(format: "%.2f", totalValue))")
+                .font(.title).bold()
+            HStack(spacing: 24) {
+                VStack {
+                    Text("Unrealized P/L")
+                        .font(.caption2)
+                    Text("$\(String(format: "%.2f", totalProfit))")
+                        .font(.headline)
+                        .foregroundColor(totalProfit >= 0 ? .green : .red)
+                }
+                VStack {
+                    Text("% Gain/Loss")
+                        .font(.caption2)
+                    Text("\(String(format: "%+.2f", totalPercent))%")
+                        .font(.headline)
+                        .foregroundColor(totalPercent >= 0 ? .green : .red)
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white.opacity(0.95))
+                .shadow(radius: 4)
+        )
+    }
+}
+
+struct PositionRowView: View {
+    let position: PortfolioPosition
+    let onDelete: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            VStack(alignment: .leading) {
+                Text(position.coin)
+                    .font(.headline)
+                Text(position.symbol.uppercased())
+                    .font(.caption)
+            }
+            Spacer()
+            VStack(alignment: .trailing) {
+                Text("Holdings: \(position.amount, specifier: "%.4f")")
+                    .font(.caption)
+                Text("Buy: $\(position.buyPrice, specifier: "%.2f")")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+                Text("Now: $\(position.currentPrice, specifier: "%.2f")")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            VStack(alignment: .trailing) {
+                Text("$\(position.value, specifier: "%.2f")")
+                    .font(.headline)
+                    .foregroundColor(colorScheme == .dark ? .black : .primary)
+                Text("\(position.percent >= 0 ? "+" : "")\(position.percent, specifier: "%.2f")%")
+                    .font(.caption)
+                    .foregroundColor(position.percent >= 0 ? .green : .red)
+            }
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .foregroundColor(.red)
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white.opacity(0.95))
+                .shadow(radius: 2)
+        )
+    }
+}
+
+struct CoinPickerSheet: View {
+    @Binding var isPresented: Bool
+    @Binding var selectedCoin: CoinListItem?
+    @Binding var searchText: String
+    let coins: [CoinListItem]
+    let isLoading: Bool
+    @Environment(\.colorScheme) var colorScheme
+    
+    var filteredCoins: [CoinListItem] {
+        if searchText.isEmpty { return coins }
+        return coins.filter { $0.name.localizedCaseInsensitiveContains(searchText) || $0.symbol.localizedCaseInsensitiveContains(searchText) }
+    }
+    
+    var body: some View {
+        NavigationView {
             VStack {
-                Image(systemName: "chart.pie")
-                    .imageScale(.large)
-                    .foregroundStyle(.tint)
-                Text("Portfolio")
+                TextField("Search", text: $searchText)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding()
+                if isLoading {
+                    ProgressView()
+                } else {
+                    List(filteredCoins, id: \.id) { coin in
+                        Button(action: {
+                            selectedCoin = coin
+                            isPresented = false
+                        }) {
+                            HStack(spacing: 12) {
+                                if let url = coin.image.flatMap(URL.init) {
+                                    AsyncImage(url: url) { image in
+                                        image.resizable().scaledToFit()
+                                    } placeholder: {
+                                        Color.gray.opacity(0.2)
+                                    }
+                                    .frame(width: 28, height: 28)
+                                    .clipShape(Circle())
+                                }
+                                VStack(alignment: .leading) {
+                                    Text(coin.name)
+                                        .font(.body)
+                                    Text(coin.symbol.uppercased())
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                                Text("$\(String(format: "%.2f", coin.current_price))")
+                                    .font(.subheadline)
+                                    .foregroundColor(colorScheme == .dark ? .black : .primary)
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Select Coin")
+            .toolbar { 
+                ToolbarItem(placement: .cancellationAction) { 
+                    Button("Cancel") { isPresented = false } 
+                } 
             }
         }
     }
 }
 
+// MARK: - PortfolioView (simplified)
+struct PortfolioView: View {
+    @State private var positions: [PortfolioPosition] = [
+        PortfolioPosition(coin: "Bitcoin", symbol: "BTC", amount: 0.5, buyPrice: 40000, currentPrice: 67000),
+        PortfolioPosition(coin: "Ethereum", symbol: "ETH", amount: 2, buyPrice: 2000, currentPrice: 3500)
+    ]
+    @State private var showAdd = false
+    @State private var showCoinPicker = false
+    @State private var coinSearch = ""
+    @State private var allCoins: [CoinListItem] = []
+    @State private var isLoadingCoins = false
+    @State private var newCoin: CoinListItem? = nil
+    @State private var newAmount = ""
+    @State private var newBuyPrice = ""
+    @State private var cancellables = Set<AnyCancellable>()
+    @Environment(\.colorScheme) var colorScheme
+    
+    var totalValue: Double { positions.reduce(0) { $0 + $1.value } }
+    var totalCost: Double { positions.reduce(0) { $0 + $1.cost } }
+    var totalProfit: Double { totalValue - totalCost }
+    var totalPercent: Double { totalCost > 0 ? (totalProfit / totalCost) * 100 : 0 }
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 16) {
+                PortfolioSummaryView(
+                    totalValue: totalValue,
+                    totalProfit: totalProfit,
+                    totalPercent: totalPercent
+                )
+                
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(positions) { position in
+                            PositionRowView(position: position) {
+                                positions.removeAll { $0.id == position.id }
+                            }
+                        }
+                    }
+                    .padding(.vertical)
+                }
+                .padding(.horizontal, 8)
+                
+                Button(action: {
+                    showAdd = true
+                    if allCoins.isEmpty {
+                        loadCoins()
+                    }
+                }) {
+                    Label("Add Position", systemImage: "plus")
+                        .font(.headline)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(12)
+                }
+                .padding(.horizontal)
+                .padding(.bottom)
+            }
+            .navigationTitle("Portfolio")
+            .sheet(isPresented: $showAdd) {
+                AddPositionSheet(
+                    isPresented: $showAdd,
+                    newCoin: $newCoin,
+                    newAmount: $newAmount,
+                    newBuyPrice: $newBuyPrice,
+                    showCoinPicker: $showCoinPicker,
+                    onAdd: addPosition
+                )
+            }
+            .sheet(isPresented: $showCoinPicker) {
+                CoinPickerSheet(
+                    isPresented: $showCoinPicker,
+                    selectedCoin: $newCoin,
+                    searchText: $coinSearch,
+                    coins: allCoins,
+                    isLoading: isLoadingCoins
+                )
+            }
+        }
+    }
+    
+    private func loadCoins() {
+        isLoadingCoins = true
+        CoinGeckoService.shared.fetchAllCoinsForPicker()
+            .sink(receiveCompletion: { _ in isLoadingCoins = false }, receiveValue: { coins in
+                allCoins = coins
+            })
+            .store(in: &cancellables)
+    }
+    
+    private func addPosition() {
+        if let coin = newCoin, let amt = Double(newAmount), let buy = Double(newBuyPrice) {
+            positions.append(PortfolioPosition(coin: coin.name, symbol: coin.symbol, amount: amt, buyPrice: buy, currentPrice: coin.current_price))
+            newCoin = nil
+            newAmount = ""
+            newBuyPrice = ""
+            showAdd = false
+        }
+    }
+}
+
+struct AddPositionSheet: View {
+    @Binding var isPresented: Bool
+    @Binding var newCoin: CoinListItem?
+    @Binding var newAmount: String
+    @Binding var newBuyPrice: String
+    @Binding var showCoinPicker: Bool
+    let onAdd: () -> Void
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Add Position")
+                .font(.title2).bold()
+            
+            Button(action: { showCoinPicker = true }) {
+                HStack {
+                    if let coin = newCoin, let url = coin.image.flatMap(URL.init) {
+                        AsyncImage(url: url) { image in
+                            image.resizable().scaledToFit()
+                        } placeholder: {
+                            Color.gray.opacity(0.2)
+                        }
+                        .frame(width: 28, height: 28)
+                        .clipShape(Circle())
+                    }
+                    Text(newCoin?.name ?? "Select Coin")
+                        .foregroundColor(colorScheme == .dark ? .black : .primary)
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .foregroundColor(.gray)
+                }
+                .padding()
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color.gray.opacity(0.1)))
+            }
+            
+            if let coin = newCoin {
+                HStack {
+                    Text("Symbol: ")
+                    Text(coin.symbol.uppercased())
+                        .bold()
+                }
+                HStack {
+                    Text("Current Price: ")
+                    Text("$\(String(format: "%.2f", coin.current_price))")
+                        .bold()
+                }
+            }
+            
+#if os(iOS)
+            TextField("Amount", text: $newAmount)
+                .keyboardType(.decimalPad)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            TextField("Buy Price", text: $newBuyPrice)
+                .keyboardType(.decimalPad)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+#else
+            TextField("Amount", text: $newAmount)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            TextField("Buy Price", text: $newBuyPrice)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+#endif
+            
+            Button("Add", action: onAdd)
+                .font(.headline)
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(12)
+            
+            Button("Cancel") { isPresented = false }
+                .foregroundColor(.red)
+                .padding(.top, 4)
+            
+            Spacer()
+        }
+        .padding()
+    }
+}
+
+// MARK: - WatchlistView (basic)
 struct WatchlistView: View {
     var body: some View {
         ZStack {
-            Color(UIColor.systemBackground).ignoresSafeArea()
+            Color.white.ignoresSafeArea()
             VStack {
                 Image(systemName: "star")
                     .imageScale(.large)
@@ -588,6 +933,7 @@ struct SettingsView: View {
     @State private var showFeedback = false
     let currencies = ["USD", "EUR", "GBP", "JPY", "BTC", "ETH"]
     let refreshOptions: [Double] = [5, 15, 30, 60, 300]
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
         NavigationView {
@@ -692,8 +1038,11 @@ struct MainTabView: View {
 }
 
 struct ContentView: View {
+    @AppStorage("isDarkMode") private var isDarkMode: Bool = false
+
     var body: some View {
         MainTabView()
+            .preferredColorScheme(isDarkMode ? .dark : .light)
     }
 }
 
