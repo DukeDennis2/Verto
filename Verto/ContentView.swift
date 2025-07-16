@@ -38,12 +38,16 @@ class CoinGeckoService {
     }
 }
 
-// MARK: - PricesViewModel
+// MARK: - PricesViewModel (pagination & refresh)
 class PricesViewModel: ObservableObject {
     @Published var coins: [Coin] = []
     @Published var sortOption: SortOption = .marketCap
     @Published var isLoading = false
+    @Published var isRefreshing = false
     private var cancellables = Set<AnyCancellable>()
+    private var currentPage = 1
+    private let perPage = 50
+    private var canLoadMore = true
     
     enum SortOption: String, CaseIterable, Identifiable {
         case marketCap = "Market Cap"
@@ -53,19 +57,45 @@ class PricesViewModel: ObservableObject {
     }
     
     init() {
-        fetchCoins()
+        fetchCoins(reset: true)
     }
     
-    func fetchCoins() {
+    func fetchCoins(reset: Bool = false) {
+        if isLoading { return }
         isLoading = true
-        CoinGeckoService.shared.fetchCoins()
+        if reset {
+            currentPage = 1
+            canLoadMore = true
+        }
+        CoinGeckoService.shared.fetchCoins(page: currentPage, perPage: perPage)
             .sink(receiveCompletion: { [weak self] completion in
                 self?.isLoading = false
-            }, receiveValue: { [weak self] coins in
-                self?.coins = coins
-                self?.sortCoins()
+                self?.isRefreshing = false
+            }, receiveValue: { [weak self] newCoins in
+                guard let self = self else { return }
+                if reset {
+                    self.coins = newCoins
+                } else {
+                    self.coins.append(contentsOf: newCoins)
+                }
+                self.canLoadMore = newCoins.count == self.perPage
+                self.sortCoins()
+                if self.canLoadMore { self.currentPage += 1 }
             })
             .store(in: &cancellables)
+    }
+    
+    func loadMoreIfNeeded(currentCoin: Coin) {
+        guard canLoadMore, !isLoading else { return }
+        let thresholdIndex = coins.index(coins.endIndex, offsetBy: -10)
+        if coins.firstIndex(where: { $0.id == currentCoin.id }) == thresholdIndex {
+            fetchCoins()
+        }
+    }
+    
+    func refresh() {
+        isRefreshing = true
+        fetchCoins(reset: true)
     }
     
     func sortCoins() {
@@ -77,6 +107,18 @@ class PricesViewModel: ObservableObject {
         case .percentChange:
             coins.sort { $0.percentChange > $1.percentChange }
         }
+    }
+}
+
+// MARK: - CoinGeckoService (pagination support)
+extension CoinGeckoService {
+    func fetchCoins(page: Int, perPage: Int) -> AnyPublisher<[Coin], Error> {
+        let url = URL(string: "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=\(perPage)&page=\(page)&sparkline=false&price_change_percentage=24h")!
+        return URLSession.shared.dataTaskPublisher(for: url)
+            .map { $0.data }
+            .decode(type: [Coin].self, decoder: JSONDecoder())
+            .receive(on: DispatchQueue.main)
+            .eraseToAnyPublisher()
     }
 }
 
@@ -129,11 +171,11 @@ extension CoinHistoryService {
     }
 }
 
-// MARK: - CoinDetailViewModel (with interval)
+// MARK: - CoinDetailViewModel (default to 'All' interval)
 class CoinDetailViewModel: ObservableObject {
     @Published var history: [CoinHistoryPoint] = []
     @Published var isLoading = false
-    @Published var selectedInterval: CoinHistoryService.Interval = .week
+    @Published var selectedInterval: CoinHistoryService.Interval = .all
     @Published var selectedPoint: CoinHistoryPoint? = nil
     private var cancellables = Set<AnyCancellable>()
     var coinId: String = ""
@@ -162,7 +204,7 @@ extension LinearGradient {
     )
 }
 
-// MARK: - CoinDetailView (chart visibility fix)
+// MARK: - CoinDetailView (default to 'All' interval)
 struct CoinDetailView: View {
     let coin: Coin
     @StateObject private var viewModel = CoinDetailViewModel()
@@ -312,10 +354,14 @@ struct CoinDetailView: View {
             }
         }
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            viewModel.selectedInterval = .all
+            viewModel.fetchHistory(for: coin.id, interval: .all)
+        }
     }
 }
 
-// MARK: - PricesView (improved readability)
+// MARK: - PricesView (infinite scroll & pull-to-refresh)
 struct PricesView: View {
     @StateObject private var viewModel = PricesViewModel()
     
@@ -324,7 +370,7 @@ struct PricesView: View {
             ZStack {
                 Color(.systemGroupedBackground)
                     .ignoresSafeArea()
-        VStack {
+                VStack {
                     Picker("Sort by", selection: $viewModel.sortOption) {
                         ForEach(PricesViewModel.SortOption.allCases) { option in
                             Text(option.rawValue).tag(option)
@@ -339,7 +385,7 @@ struct PricesView: View {
                     )
                     .padding(.horizontal)
                     
-                    if viewModel.isLoading {
+                    if viewModel.isLoading && viewModel.coins.isEmpty {
                         Spacer()
                         ProgressView("Loading prices...")
                             .progressViewStyle(CircularProgressViewStyle(tint: .blue))
@@ -350,11 +396,21 @@ struct PricesView: View {
                                 ForEach(viewModel.coins) { coin in
                                     NavigationLink(destination: CoinDetailView(coin: coin)) {
                                         CoinRowView(coin: coin)
+                                            .onAppear {
+                                                viewModel.loadMoreIfNeeded(currentCoin: coin)
+                                            }
                                     }
                                     .buttonStyle(PlainButtonStyle())
                                 }
+                                if viewModel.isLoading && !viewModel.coins.isEmpty {
+                                    ProgressView()
+                                        .padding()
+                                }
                             }
                             .padding(.vertical)
+                            .refreshable {
+                                viewModel.refresh()
+                            }
                         }
                         .padding(.horizontal, 8)
                     }
